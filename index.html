@@ -1,0 +1,120 @@
+import random
+import json
+import datetime
+from typing import List, Dict, Optional
+
+class LotteryMachine:
+    def __init__(self, name: str = "GitHub Lottery"):
+        self.name = name
+        self.participants = []
+        self.winners = []
+        self.history = []
+        
+    def add_participant(self, participant: str):
+        """Add a participant to the lottery"""
+        if participant not in self.participants:
+            self.participants.append(participant)
+            
+    def add_participants(self, participants: List[str]):
+        """Add multiple participants to the lottery"""
+        for participant in participants:
+            self.add_participant(participant)
+            
+    def remove_participant(self, participant: str):
+        """Remove a participant from the lottery"""
+        if participant in self.participants:
+            self.participants.remove(participant)
+            
+    def draw_winner(self, remove_after_draw: bool = True) -> Optional[str]:
+        """Draw a random winner from the participants"""
+        if not self.participants:
+            return None
+            
+        winner = random.choice(self.participants)
+        
+        if remove_after_draw:
+            self.participants.remove(winner)
+            
+        self.winners.append(winner)
+        
+        # Record in history
+        draw_record = {
+            "timestamp": datetime.datetime.now().isoformat(),
+            "winner": winner,
+            "remaining_participants": len(self.participants)
+        }
+        self.history.append(draw_record)
+        
+        return winner
+    
+    def draw_multiple_winners(self, count: int, remove_after_draw: bool = True) -> List[str]:
+        """Draw multiple winners from the participants"""
+        if count > len(self.participants):
+            count = len(self.participants)
+            
+        winners = []
+        for _ in range(count):
+            winner = self.draw_winner(remove_after_draw)
+            if winner:
+                winners.append(winner)
+                
+        return winners
+    
+    def reset(self):
+        """Reset the lottery machine"""
+        self.participants = []
+        self.winners = []
+        self.history = []
+        
+    def save_results(self, filename: str = None):
+        """Save the lottery results to a JSON file"""
+        if filename is None:
+            timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"lottery_results_{timestamp}.json"
+            
+        results = {
+            "lottery_name": self.name,
+            "draw_date": datetime.datetime.now().isoformat(),
+            "winners": self.winners,
+            "history": self.history,
+            "participants_at_time_of_draw": self.participants + self.winners
+        }
+        
+        with open(filename, 'w') as f:
+            json.dump(results, f, indent=4)
+            
+        return filename
+    
+    def load_participants_from_file(self, filename: str):
+        """Load participants from a text file (one per line)"""
+        with open(filename, 'r') as f:
+            participants = [line.strip() for line in f.readlines() if line.strip()]
+        
+        self.add_participants(participants)
+        
+    def __str__(self):
+        return f"Lottery: {self.name}\nParticipants: {len(self.participants)}\nWinners: {len(self.winners)}"
+
+# Example usage
+if __name__ == "__main__":
+    # Create a lottery machine
+    lottery = LotteryMachine("GitHub Contributor Lottery")
+    
+    # Add participants (could be GitHub usernames)
+    participants = [
+        "alice", "bob", "charlie", "diana", "eve", 
+        "frank", "grace", "heidi", "ivan", "judy"
+    ]
+    lottery.add_participants(participants)
+    
+    print("Drawing 3 winners from the GitHub contributors...")
+    print(f"Initial participants: {lottery.participants}")
+    
+    # Draw 3 winners
+    winners = lottery.draw_multiple_winners(3)
+    print(f"Winners: {winners}")
+    print(f"Remaining participants: {lottery.participants}")
+    
+    # Save results
+    filename = lottery.save_results()
+    print(f"Results saved to {filename}")
